@@ -502,7 +502,7 @@ Isolate* Runtime::PrepareV8Runtime(const string& filesPath, const string& native
             }
 
             DEBUG_WRITE_FORCE("Creating heap snapshot");
-            *m_startupData = V8::CreateSnapshotDataBlob(customScript.c_str());
+            *m_startupData = Runtime::CreateSnapshotDataBlob(customScript.c_str());
 
             if (m_startupData->raw_size == 0) {
                 DEBUG_WRITE_FORCE("Failed to create heap snapshot.");
@@ -683,6 +683,60 @@ void Runtime::SetManualInstrumentationMode(jstring mode) {
     if (modeStr == "timeline") {
         tns::instrumentation::Frame::enable();
     }
+}
+
+StartupData Runtime::CreateSnapshotDataBlob(const char* embedded_source) {
+    // Create a new isolate and a new context from scratch, optionally run
+    // a script to embed, and serialize to create a snapshot blob.
+    StartupData result = {nullptr, 0};
+    {
+        SnapshotCreator snapshot_creator;
+        Isolate* isolate = snapshot_creator.GetIsolate();
+        {
+            HandleScope scope(isolate);
+            Local<Context> context = Context::New(isolate);
+            if (embedded_source != nullptr &&
+                    !Runtime::RunExtraCode(isolate, context, embedded_source, "<embedded>")) {
+                return result;
+            }
+            snapshot_creator.SetDefaultContext(context);
+        }
+        result = snapshot_creator.CreateBlob(
+                     SnapshotCreator::FunctionCodeHandling::kClear);
+    }
+
+    return result;
+}
+
+bool Runtime::RunExtraCode(Isolate* isolate, Local<Context> context, const char* utf8_source, const char* name) {
+    Context::Scope context_scope(context);
+    TryCatch try_catch(isolate);
+    Local<v8::String> source_string;
+    if (!v8::String::NewFromUtf8(isolate, utf8_source, NewStringType::kNormal).ToLocal(&source_string)) {
+        return false;
+    }
+    Local<v8::String> resource_name = v8::String::NewFromUtf8(isolate, name, NewStringType::kNormal).ToLocalChecked();
+    ScriptOrigin origin(resource_name);
+    ScriptCompiler::Source source(source_string, origin);
+    Local<Script> script;
+    if (!ScriptCompiler::Compile(context, &source).ToLocal(&script)) {
+        DEBUG_WRITE_FORCE("# Script compile failed in %s@%d:%d\n%s\n",
+                          *v8::String::Utf8Value(isolate, try_catch.Message()->GetScriptResourceName()),
+                          try_catch.Message()->GetLineNumber(context).FromJust(),
+                          try_catch.Message()->GetStartColumn(context).FromJust(),
+                          *v8::String::Utf8Value(isolate, try_catch.Exception()));
+        return false;
+    }
+    if (script->Run(context).IsEmpty()) {
+        DEBUG_WRITE_FORCE("# Script run failed in %s@%d:%d\n%s\n",
+                          *v8::String::Utf8Value(isolate, try_catch.Message()->GetScriptResourceName()),
+                          try_catch.Message()->GetLineNumber(context).FromJust(),
+                          try_catch.Message()->GetStartColumn(context).FromJust(),
+                          *v8::String::Utf8Value(isolate, try_catch.Exception()));
+        return false;
+    }
+    CHECK(!try_catch.HasCaught());
+    return true;
 }
 
 void Runtime::DestroyRuntime() {

@@ -15,7 +15,8 @@ string tns::ConvertToString(const Local<v8::String>& s) {
     if (s.IsEmpty()) {
         return string();
     } else {
-        String::Utf8Value str(s);
+        auto isolate = v8::Isolate::GetCurrent();
+        String::Utf8Value str(isolate, s);
         return string(*str);
     }
 }
@@ -87,11 +88,11 @@ Local<String> tns::JsonStringifyObject(Isolate* isolate, Handle<v8::Value> value
             v8::Local<v8::Value> resultValue;
             v8::TryCatch tc(isolate);
 
-            Local<Value> args[] = { value->ToObject() };
+            Local<Value> args[] = { value->ToObject(isolate) };
             auto success = smartJSONStringifyFunction->Call(isolate->GetCurrentContext(), Undefined(isolate), 1, args).ToLocal(&resultValue);
 
             if (success && !tc.HasCaught()) {
-                return resultValue->ToString();
+                return resultValue->ToString(isolate);
             }
         }
     }
@@ -102,7 +103,7 @@ Local<String> tns::JsonStringifyObject(Isolate* isolate, Handle<v8::Value> value
 
     if (!success && tc.HasCaught()) {
         auto message = tc.Message()->Get();
-        resultString = v8::String::Concat(ArgConverter::ConvertToV8String(isolate, "Couldn't convert object to a JSON string: "), message);
+        resultString = v8::String::Concat(isolate, ArgConverter::ConvertToV8String(isolate, "Couldn't convert object to a JSON string: "), message);
     }
 
     return resultString;
@@ -110,7 +111,8 @@ Local<String> tns::JsonStringifyObject(Isolate* isolate, Handle<v8::Value> value
 
 jstring tns::ConvertToJavaString(const Local<Value>& value) {
     JEnv env;
-    String::Value stringValue(value);
+    auto isolate = v8::Isolate::GetCurrent();
+    String::Value stringValue(isolate, value);
     return env.NewString((const jchar*) *stringValue, stringValue.length());
 }
 

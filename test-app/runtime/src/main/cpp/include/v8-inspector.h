@@ -229,6 +229,11 @@ class V8_EXPORT V8InspectorClient {
         }
 
         virtual void maxAsyncCallStackDepthChanged(int depth) {}
+
+        virtual std::unique_ptr<StringBuffer> resourceNameToUrl(
+            const StringView& resourceName) {
+            return nullptr;
+        }
 };
 
 // These stack trace ids are intended to be passed between debuggers and be
@@ -254,6 +259,8 @@ class V8_EXPORT V8Inspector {
         virtual void contextCreated(const V8ContextInfo&) = 0;
         virtual void contextDestroyed(v8::Local<v8::Context>) = 0;
         virtual void resetContextGroup(int contextGroupId) = 0;
+        virtual v8::MaybeLocal<v8::Context> contextById(int groupId,
+                v8::Maybe<int> contextId) = 0;
 
         // Various instrumentation.
         virtual void idleStarted() = 0;

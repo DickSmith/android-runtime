@@ -303,7 +303,7 @@ string NativeScriptException::GetErrorMessage(const Local<Message>& message, Loc
     } else {
         ss << "File: \"<unknown>";
     }
-    ss << ", line: " << message->GetLineNumber() << ", column: " << message->GetStartColumn() << endl << endl;
+    ss << ", line: " << message->GetLineNumber(context).ToChecked() << ", column: " << message->GetStartColumn() << endl << endl;
     ss << "StackTrace: " << endl << stackTraceMessage << endl;
 
     return ss.str();
@@ -318,7 +318,7 @@ string NativeScriptException::GetErrorStackTrace(const Local<StackTrace>& stackT
     int frameCount = stackTrace->GetFrameCount();
 
     for (int i = 0; i < frameCount; i++) {
-        auto frame = stackTrace->GetFrame(i);
+        auto frame = stackTrace->GetFrame(isolate, i);
         auto funcName = ArgConverter::ConvertToString(frame->GetFunctionName());
         auto srcName = ArgConverter::ConvertToString(frame->GetScriptName());
         auto lineNumber = frame->GetLineNumber();
