@@ -980,10 +980,6 @@ public class Runtime {
             runtime = getObjectRuntime(javaObject);
         }
 
-        if (runtime == null) {
-            throw new NativeScriptException("Cannot find runtime for instance=" + ((javaObject == null) ? "null" : javaObject));
-        }
-
         return runtime.callJSMethodImpl(javaObject, methodName, retType, isConstructor, delay, args);
     }
 

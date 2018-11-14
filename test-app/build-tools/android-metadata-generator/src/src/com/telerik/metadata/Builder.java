@@ -112,9 +112,8 @@ public class Builder {
         }
 
         TreeNode node = getOrCreateNode(root, clazz, predefinedSuperClassname);
-        if (node != null) {
-            setNodeMembers(clazz, node, root, hasClassMetadataInfo);
-        }
+
+        setNodeMembers(clazz, node, root, hasClassMetadataInfo);
     }
 
     private static void setNodeMembers(ClassDescriptor clazz, TreeNode node, TreeNode root, boolean hasClassMetadataInfo) throws Exception {
