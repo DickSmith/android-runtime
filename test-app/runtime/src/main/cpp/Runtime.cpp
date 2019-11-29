@@ -47,6 +47,10 @@ void SIGABRT_handler(int sigNumber) {
     throw NativeScriptException("JNI Exception occurred (SIGABRT).\n=======\nCheck the 'adb logcat' for additional information about the error.\n=======\n");
 }
 
+void SIGSEGV_handler(int sigNumber) {
+    throw NativeScriptException("JNI Exception occurred (SIGSEGV).\n=======\nCheck the 'adb logcat' for additional information about the error.\n=======\n");
+}
+
 void Runtime::Init(JavaVM* vm, void* reserved) {
     __android_log_print(ANDROID_LOG_INFO, "TNS.Runtime", "NativeScript Runtime Version %s, commit %s", NATIVE_SCRIPT_RUNTIME_VERSION, NATIVE_SCRIPT_RUNTIME_COMMIT_SHA);
 
@@ -56,11 +60,15 @@ void Runtime::Init(JavaVM* vm, void* reserved) {
         JEnv::Init(s_jvm);
     }
 
+    // handle SIGABRT/SIGSEGV only on API level > 25 as the handling is not so efficient in older versions
     if (m_androidVersion > 25) {
-        // handle SIGABRT only on API level > 25 as the handling is not so efficient in older versions
-        struct sigaction action;
-        action.sa_handler = SIGABRT_handler;
-        sigaction(SIGABRT, &action, NULL);
+        struct sigaction SIGABRT_action;
+        SIGABRT_action.sa_handler = SIGABRT_handler;
+        sigaction(SIGABRT, &SIGABRT_action, NULL);
+
+        struct sigaction SIGSEGV_action;
+        SIGSEGV_action.sa_handler = SIGSEGV_handler;
+        sigaction(SIGSEGV, &SIGSEGV_action, NULL);
     }
 }
 
