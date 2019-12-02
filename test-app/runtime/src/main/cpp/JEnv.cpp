@@ -243,7 +243,10 @@ JEnv::CallNonvirtualObjectMethodA(jobject obj, jclass clazz, jmethodID methodID,
 }
 
 jobject JEnv::CallObjectMethodA(jobject obj, jmethodID methodID, jvalue *args) {
-    jobject jo = m_env->CallObjectMethodA(obj, methodID, args);
+    jobject jo = nullptr;
+    if (m_env != nullptr && obj != nullptr && methodID != nullptr && args != nullptr) {
+        jo = m_env->CallObjectMethodA(obj, methodID, args);
+    }
     CheckForJavaException();
     return jo;
 }

@@ -68,6 +68,8 @@ public final class RuntimeHelper {
             ManualInstrumentation.Frame loadLibraryFrame = ManualInstrumentation.start("loadLibrary NativeScript");
             try {
                 System.loadLibrary("NativeScript");
+            } catch (Throwable t) {
+                Log.e("NativeScript RuntimeHelper", "failure on RuntimeHelper.initRuntime() 1", t);
             } finally {
                 loadLibraryFrame.close();
             }
@@ -125,6 +127,8 @@ public final class RuntimeHelper {
                         }
 
                         extractPolicy.setAssetsThumb(context);
+                    } catch (Throwable t) {
+                        Log.e("NativeScript RuntimeHelper", "failure on RuntimeHelper.initRuntime() 2", t);
                     } finally {
                         extractionFrame.close();
                     }
@@ -232,6 +236,9 @@ public final class RuntimeHelper {
                 }
             }
             return runtime;
+        } catch (Throwable t) {
+            Log.e("NativeScript RuntimeHelper", "failure on RuntimeHelper.initRuntime() 3", t);
+            return null;
         } finally {
             frame.close();
         }
