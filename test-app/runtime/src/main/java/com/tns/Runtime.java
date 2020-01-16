@@ -5,6 +5,7 @@ import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.Message;
 import android.os.Process;
+import android.util.Log;
 
 import com.tns.bindings.ProxyGenerator;
 import com.tns.system.classes.caching.impl.ClassCacheImpl;
@@ -469,7 +470,16 @@ public class Runtime {
                     msg.arg2 = runtime.runtimeId;
 
                     runtime.mainThreadHandler.sendMessage(msg);
-                    runtime.runWorker(runtime.runtimeId, filePath);
+
+                    try {
+                        runtime.runWorker(runtime.runtimeId, filePath);
+                    } catch (Throwable t) {
+                        if (staticConfiguration.logger.isEnabled()) {
+                            staticConfiguration.logger.write("Worker (id=" + workerId + ") failed to start with file: " + filePath);
+                        } else {
+                            t.printStackTrace(); //or something else
+                        }
+                    }
 
                     runtime.processPendingMessages();
                 }
@@ -640,6 +650,8 @@ public class Runtime {
             GcListener.subscribe(this);
 
             initialized = true;
+        } catch (Throwable t) {
+            Log.e("NativeScript Runtime", "failure on Runtime.init()", t);
         } finally {
             frame.close();
         }
@@ -664,6 +676,8 @@ public class Runtime {
         try {
             String mainModule = Module.bootstrapApp();
             runModule(new File(mainModule));
+        } catch (Throwable t) {
+            Log.e("NativeScript Runtime", "failure on Runtime.run()", t);
         } finally {
             frame.close();
         }
@@ -792,6 +806,8 @@ public class Runtime {
             } else {
                 runtime.createJSInstance(instance);
             }
+        } catch (Throwable t) {
+            Log.e("NativeScript Runtime", "failure on Runtime.initInstance()", t);
         } finally {
             frame.close();
         }
@@ -1287,7 +1303,7 @@ public class Runtime {
             } catch (NativeScriptException e) {
                 if (discardUncaughtJsExceptions) {
                     String errorMessage = "Error on \"" + Thread.currentThread().getName() + "\" thread for callJSMethodNative\n";
-                    android.util.Log.w("Warning", "NativeScript discarding uncaught JS exception!");
+                    Log.w("Warning", "NativeScript discarding uncaught JS exception!");
                     passDiscardedExceptionToJs(e, errorMessage);
                 } else {
                     throw e;
@@ -1309,7 +1325,7 @@ public class Runtime {
                             if (discardUncaughtJsExceptions) {
                                 String errorMessage = "Error on \"" + Thread.currentThread().getName() + "\" thread for callJSMethodNative\n";
                                 passDiscardedExceptionToJs(e, errorMessage);
-                                android.util.Log.w("Warning", "NativeScript discarding uncaught JS exception!");
+                                Log.w("Warning", "NativeScript discarding uncaught JS exception!");
                             } else {
                                 throw e;
                             }

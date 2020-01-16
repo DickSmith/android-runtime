@@ -47,6 +47,9 @@ void SIG_handler(int sigNumber) {
     stringstream msg;
     msg << "JNI Exception occurred (";
     switch (sigNumber) {
+        case SIGTRAP:
+            msg << "SIGTRAP";
+            break;
         case SIGABRT:
             msg << "SIGABRT";
             break;
@@ -75,6 +78,7 @@ void Runtime::Init(JavaVM* vm, void* reserved) {
     if (m_androidVersion > 20) {
         struct sigaction action;
         action.sa_handler = SIG_handler;
+        sigaction(SIGTRAP, &action, NULL);
         sigaction(SIGABRT, &action, NULL);
         sigaction(SIGSEGV, &action, NULL);
     }
